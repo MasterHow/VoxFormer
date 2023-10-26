@@ -1,0 +1,87 @@
+#####################################################
+新建会话：tmux new -s SESSION-NAME
+杀死会话：tmux kill-session -t 0
+接入会话：tmux attach-session -t 0
+退出并杀死当前会话：ctrl+d
+
+# 远程连接tensorboard
+ssh -p 40216 -NL 8008:localhost:9009 root@ssh.atom.ks.supremind.info
+链接成功后会卡死，直接新开一个终端启动tb就好了
+
+# 打开tb
+tensorboard --logdir='./' --port=9009
+http://127.0.0.1:8008/
+
+# 上传数据
+双卡工作台
+scp -P 40612 D:\迅雷下载\smmc-Linux_amd64.tar.gz root@ssh.atom.rk.supremind.info:/workspace/mnt/storage/shihao/EventSSC/SemanticKITTI/src/dataset
+单卡工作台
+scp -P 42169 F:\SSC_Datasets\data_odometry_poses_reorganize.zip root@ssh.atom.rk.supremind.info:/workspace/mnt/storage/shihao/RgbSSC/SemanticKITTI/
+
+# 下载数据
+双卡工作台
+scp -P 40612 root@ssh.atom.rk.supremind.info:/workspace/mnt/storage/shihao/RgbSSC/SemanticKITTI/data_odometry_calib.zip D:\
+单卡工作台
+scp -P 42169 root@ssh.atom.rk.supremind.info:/workspace/mnt/storage/shihao/RgbSSC/SemanticKITTI/data_odometry_calib.zip D:\
+
+# 清除显卡进程
+安装fuser： apt-get install psmisc
+fuser -v /dev/nvidia* |awk '{for(i=1;i<=NF;i++)print "kill -9 " $i;}' | sh
+
+# 查看所有进程
+ps -aux
+
+# 查看服务器端口占用
+netstat -ap
+
+# SemanticKITTI SSC数据集分布
+训练集：01-10除了08，共3834帧点云; 不抽帧: 19130帧点云
+验证集：08，共815帧点云; 不抽帧: 4071帧点云
+测试集：11-21，3901帧点云; 不抽帧: 20351帧点云
+
+# SemanticPOSS SSC数据集分布
+训练集：01，03，04，05，共2488帧点云
+验证集：02，共500帧点云
+
+# 迭代删除
+rm -rf 路径
+
+# 对执行脚本赋予可读可写可执行权限
+sudo chmod 777 ×××
+
+# pip换源
+pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/
+
+# 查看磁盘空间
+df -h
+
+# 查看某个包的安装位置
+conda list mmcv-full | grep 'mmcv-full'
+或（针对pip安装的包）
+pip show mmcv-full
+
+# 杀死所有后台python程序
+kill -9 $(pgrep python)
+
+# 查看端口被哪个进程占用
+lsof -i:端口号
+
+# 环境配置
+镜像：reg.supremind.info/wuyuhao/bevdetection:base
+source /opt/conda/bin/activate
+pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/
+cd /workspace/mnt/storage/shihao/MyCode-02/VoxFormer
+conda install -c omgarcia gcc-6 -y
+pip install timm
+cd deform_attn_3d
+python setup.py build_ext --inplace
+pip install einops
+pip install seaborn
+chmod 777 ./tools/dist_train.sh
+
+
+
+#####################################################
+# 复现VoxFormer
+bash ./tools/dist_train.sh ./projects/configs/voxformer/voxformer-T-reproduce.py 1
+
