@@ -233,17 +233,17 @@ def main():
         # refer to https://mmdetection3d.readthedocs.io/en/latest/tutorials/customize_runtime.html#customize-workflow  # noqa
         val_dataset.test_mode = False
         datasets.append(build_dataset(val_dataset))
-    if cfg.checkpoint_config is not None:
-        # save mmdet version, config file content and class names in
-        # checkpoints as meta data
-        cfg.checkpoint_config.meta = dict(
-            mmdet_version=mmdet_version,
-            mmseg_version=mmseg_version,
-            mmdet3d_version=mmdet3d_version,
-            config=cfg.pretty_text)
-            # CLASSES=datasets[0].CLASSES,
-            # PALETTE=datasets[0].PALETTE  # for segmentors
-            # if hasattr(datasets[0], 'PALETTE') else None)
+    # if cfg.checkpoint_config is not None:   # 注释掉这里写入的meta信息可以解决多卡训练cuda不同步的bug
+    #     # save mmdet version, config file content and class names in
+    #     # checkpoints as meta data
+    #     cfg.checkpoint_config.meta = dict(
+    #         mmdet_version=mmdet_version,
+    #         mmseg_version=mmseg_version,
+    #         mmdet3d_version=mmdet3d_version,
+    #         config=cfg.pretty_text)
+    #         # CLASSES=datasets[0].CLASSES,
+    #         # PALETTE=datasets[0].PALETTE  # for segmentors
+    #         # if hasattr(datasets[0], 'PALETTE') else None)
     # add an attribute for visualization convenience
     # model.CLASSES = datasets[0].CLASSES
 

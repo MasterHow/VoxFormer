@@ -1,4 +1,4 @@
-work_dir = 'result/voxformer-S_deform3D'
+work_dir = 'result/voxformer-T_3D_rgb+event'
 _base_ = [
     '../_base_/default_runtime.py'
 ]
@@ -15,8 +15,8 @@ _ffn_dim_ = _dim_*2
 _num_levels_ = 1
 
 _labels_tag_ = 'labels'
-_num_cams_ = 1
-_temporal_ = []
+_num_cams_ = 5
+_temporal_ = [-12,-9,-6,-3]
 point_cloud_range = [0, -25.6, -2.0, 51.2, 25.6, 4.4]
 voxel_size = [0.2, 0.2, 0.2]
 
@@ -32,6 +32,7 @@ model = dict(
    img_backbone=dict(
        type='ResNet',
        depth=50,
+       in_channels=7,
        num_stages=4,
        out_indices=(2,),
        frozen_stages=1,
@@ -139,7 +140,7 @@ model = dict(
 
 
 dataset_type = 'SemanticKittiDatasetStage2'
-data_root = '/workspace/mnt/storage/shihao/RgbSSC/SemanticKITTI/'
+data_root = '/workspace/mnt/storage/shihao/EventSSC/SemanticKITTI/kitti/'
 file_client_args = dict(backend='disk')
 
 data = dict(
@@ -156,7 +157,8 @@ data = dict(
        nsweep=_nsweep_,
        temporal = _temporal_,
        labels_tag = _labels_tag_,
-       query_tag = _query_tag_),
+       query_tag = _query_tag_,
+       event_input=True,),
    val=dict(
        type=dataset_type,
        split = "val",
@@ -168,7 +170,8 @@ data = dict(
        nsweep=_nsweep_,
        temporal = _temporal_,
        labels_tag = _labels_tag_,
-       query_tag = _query_tag_),
+       query_tag = _query_tag_,
+       event_input=True,),
    test=dict(
        type=dataset_type,
        split = "val",
@@ -180,7 +183,8 @@ data = dict(
        nsweep=_nsweep_,
        temporal = _temporal_,
        labels_tag = _labels_tag_,
-       query_tag = _query_tag_),
+       query_tag = _query_tag_,
+       event_input=True,),
    shuffler_sampler=dict(type='DistributedGroupSampler'),
    nonshuffler_sampler=dict(type='DistributedSampler')
 )
@@ -209,3 +213,4 @@ log_config = dict(
 
 # checkpoint_config = None
 checkpoint_config = dict(interval=1)
+

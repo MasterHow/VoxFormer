@@ -5,18 +5,20 @@
 退出并杀死当前会话：ctrl+d
 
 # 远程连接tensorboard
-ssh -p 40216 -NL 8008:localhost:9009 root@ssh.atom.ks.supremind.info
+ssh -p 42169 -NL 8008:localhost:9009 root@ssh.atom.rk.supremind.info
 链接成功后会卡死，直接新开一个终端启动tb就好了
 
 # 打开tb
+source /opt/conda/bin/activate
+cd /workspace/mnt/storage/shihao/MyCode-02/VoxFormer/result
 tensorboard --logdir='./' --port=9009
 http://127.0.0.1:8008/
 
 # 上传数据
 双卡工作台
-scp -P 40612 D:\迅雷下载\smmc-Linux_amd64.tar.gz root@ssh.atom.rk.supremind.info:/workspace/mnt/storage/shihao/EventSSC/SemanticKITTI/src/dataset
+scp -P 40612 D:\MyProject\PyThon\SSC\VoxFormer\preprocess\data_odometry_calib.zip root@ssh.atom.rk.supremind.info:/workspace/mnt/storage/shihao/EventSSC/SemanticKITTI/kitti
 单卡工作台
-scp -P 42169 F:\SSC_Datasets\data_odometry_poses_reorganize.zip root@ssh.atom.rk.supremind.info:/workspace/mnt/storage/shihao/RgbSSC/SemanticKITTI/
+scp -P 42169 D:\MyProject\PyThon\SSC\mmdetection3d.zip root@ssh.atom.rk.supremind.info:/workspace/mnt/storage/shihao/MyCode-02/mmdet3d
 
 # 下载数据
 双卡工作台
@@ -25,7 +27,9 @@ scp -P 40612 root@ssh.atom.rk.supremind.info:/workspace/mnt/storage/shihao/RgbSS
 scp -P 42169 root@ssh.atom.rk.supremind.info:/workspace/mnt/storage/shihao/RgbSSC/SemanticKITTI/data_odometry_calib.zip D:\
 
 # 清除显卡进程
-安装fuser： apt-get install psmisc
+安装fuser：
+apt-get update -y
+apt-get install psmisc -y
 fuser -v /dev/nvidia* |awk '{for(i=1;i<=NF;i++)print "kill -9 " $i;}' | sh
 
 # 查看所有进程
@@ -66,22 +70,67 @@ kill -9 $(pgrep python)
 # 查看端口被哪个进程占用
 lsof -i:端口号
 
+# pip下载某个安装包
+pip download -d /path/to/download/directory package_name
+pip download -d /workspace/mnt/storage/shihao/MyCode-02/VoxFormer/pip_packages torch==1.9.1+cu111 torchvision==0.10.1+cu111 torchaudio==0.9.1 -f https://download.pytorch.org/whl/torch_stable.html
+
+# pip使用下载好的包离线安装
+pip install --no-index --find-links=/workspace/mnt/storage/shihao/MyCode-02/VoxFormer/pip_packages torch==1.9.1+cu111 torchvision==0.10.1+cu111 torchaudio==0.9.1
+
 # 环境配置
+# 遵循官方安装教程里的mm依赖库版本
 镜像：reg.supremind.info/wuyuhao/bevdetection:base
 source /opt/conda/bin/activate
+conda create -n open-mmlab python=3.8 -y
+conda activate open-mmlab
 pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/
+export CC=gcc
+export CXX=g++
+export CUDA_HOME=/usr/local/cuda-11.1
+export PATH=$CUDA_HOME/bin:$PATH
+export LD_LIBRARY_PATH=$CUDA_HOME/lib64:$LD_LIBRARY_PATH
 cd /workspace/mnt/storage/shihao/MyCode-02/VoxFormer
+# pip install torch==1.9.1+cu111 torchvision==0.10.1+cu111 torchaudio==0.9.1 -f https://download.pytorch.org/whl/torch_stable.html
+pip install --no-index --find-links=/workspace/mnt/storage/shihao/MyCode-02/VoxFormer/pip_packages torch==1.9.1+cu111 torchvision==0.10.1+cu111 torchaudio==0.9.1
 conda install -c omgarcia gcc-6 -y
+pip install openmim
+mim install mmcv-full==1.4.0        ?pip install mmcv-full==1.4.0 --no-cache --no-binary :all: 缓存原因？
+pip install mmdet==2.14.0
+pip install mmsegmentation==0.14.1
+cd /workspace/mnt/storage/shihao/MyCode-02/mmdet3d
+git reset --hard HEAD
+git checkout v0.17.1
+pip install -v -e .
+MMENGINE_LITE=1 pip install mmengine
+pip install yapf==0.40.1
 pip install timm
-cd deform_attn_3d
+cd /workspace/mnt/storage/shihao/MyCode-02/VoxFormer/deform_attn_3d
 python setup.py build_ext --inplace
 pip install einops
 pip install seaborn
+pip install numpy==1.19.5
+pip install setuptools==59.5.0
+cd /workspace/mnt/storage/shihao/MyCode-02/VoxFormer
 chmod 777 ./tools/dist_train.sh
+bash ./tools/dist_train.sh ./projects/configs/voxformer/voxformer-T-reproduce.py 8
 
-
-
+# 注意VoxFormer预处理了Calib.txt文件 增加了Tr
 #####################################################
-# 复现VoxFormer
-bash ./tools/dist_train.sh ./projects/configs/voxformer/voxformer-T-reproduce.py 1
+# 复现VoxFormer-T
+bash ./tools/dist_train.sh ./projects/configs/voxformer/voxformer-T-reproduce.py 8
+备注：IoU 43.63，mIoU 12.76 此次复现未保存ckpt
+备注：第二次复现精度明显下降，推测loss ssc未成功优化
+
+# 复现VoxFormer-S
+bash ./tools/dist_train.sh ./projects/configs/voxformer/voxformer-S-debug.py 8
+备注：IoU 44.22，mIoU 12.10 以后精度记录在excel中
+
+# 复现VoxFormer-T-deform3D
+bash ./tools/dist_train.sh ./projects/configs/voxformer/voxformer-T_deform3D.py 8
+
+# 复现VoxFormer-S-deform3D
+bash ./tools/dist_train.sh ./projects/configs/voxformer/voxformer-S_deform3D.py 8
+
+# VoxFormer-T-3D_rgb+event
+bash ./tools/dist_train.sh ./projects/configs/voxformer/voxformer-T_deform3D_event.py 2
 

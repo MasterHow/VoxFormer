@@ -143,7 +143,7 @@ data_root = '/workspace/mnt/storage/shihao/RgbSSC/SemanticKITTI/'
 file_client_args = dict(backend='disk')
 
 data = dict(
-   samples_per_gpu=1,
+   samples_per_gpu=1,   # 每张卡上的batch数量
    workers_per_gpu=4,
    train=dict(
        type=dataset_type,
@@ -207,5 +207,5 @@ log_config = dict(
        dict(type='TensorboardLoggerHook')
    ])
 
-checkpoint_config = None
-# checkpoint_config = dict(interval=2)
+# checkpoint_config = None
+checkpoint_config = dict(interval=1)

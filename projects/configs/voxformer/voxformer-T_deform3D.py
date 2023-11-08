@@ -139,7 +139,7 @@ model = dict(
 
 
 dataset_type = 'SemanticKittiDatasetStage2'
-data_root = './kitti/'
+data_root = '/workspace/mnt/storage/shihao/RgbSSC/SemanticKITTI/'
 file_client_args = dict(backend='disk')
 
 data = dict(
@@ -207,5 +207,6 @@ log_config = dict(
        dict(type='TensorboardLoggerHook')
    ])
 
-checkpoint_config = None
-# checkpoint_config = dict(interval=2)
+# checkpoint_config = None
+checkpoint_config = dict(interval=1)
+

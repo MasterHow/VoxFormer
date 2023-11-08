@@ -7,6 +7,7 @@
 import os
 from os import path as osp
 from PIL import Image
+import cv2
 import glob
 import random
 import copy
@@ -22,6 +23,10 @@ from projects.mmdet3d_plugin.voxformer.utils.ssc_metric import SSCMetrics
 
 @DATASETS.register_module()
 class SemanticKittiDatasetStage2(Dataset):
+    """
+    Advised by Hao:
+    --event_input (bool): if true, read event frames for the pipeline.
+    """
     def __init__(
         self,
         split,
@@ -35,12 +40,18 @@ class SemanticKittiDatasetStage2(Dataset):
         labels_tag = 'labels',
         query_tag = 'query_iou5203_pre7712_rec6153',
         color_jitter=None,
+        event_input=False,
     ):
         super().__init__()
         
         self.data_root = data_root
         self.label_root = os.path.join(preprocess_root, labels_tag)
         self.query_tag = query_tag
+        self.event_input = event_input
+        if self.event_input is True:
+            # 用于将事件转换为tensor
+            self.to_tensor = transforms.ToTensor()
+
         self.nsweep=str(nsweep)
         self.depthmodel = depthmodel
         self.eval_range = eval_range
@@ -366,8 +377,24 @@ class SemanticKittiDatasetStage2(Dataset):
             img = self.color_jitter(img)
         # PIL to numpy
         img = np.array(img, dtype=np.float32, copy=False) / 255.0
+        img_h, img_w, _ = img.shape     # 获取图像的size
         img = img[:self.img_H, :self.img_W, :]  # crop image
-        image_list.append(self.normalize_rgb(img))
+        img = self.normalize_rgb(img)  # 通过rgb的均值方差归一化
+
+        # Read Event Frame
+        if self.event_input is True:
+            event_frame_path = os.path.join(
+                self.data_root, "dataset", "event_cnt_frames", sequence, "image_0", frame_id + ".npy"
+            )  # 4 channel (pos_cnt, neg_cnt, pos_near, neg_near) H*W*4    3-sigma归一化到(0, 255)
+            event_frame = np.load(event_frame_path)
+            assert self.color_jitter is None  # Baseline没有增强，事件帧增强不等同图像增强
+            event_frame = cv2.resize(event_frame, (img_w, img_h))  # resize事件帧到一样大小
+            event_frame = np.array(event_frame, dtype=np.float32, copy=False) / 255.0  # 归一化
+            event_frame = event_frame[:self.img_H, :self.img_W, :]  # crop image
+            event_frame = self.to_tensor(event_frame)   # to tensor转换类型和维度
+            img = torch.cat((img, event_frame), dim=0)  # 堆叠rgb和事件 [3+4, H, W]
+
+        image_list.append(img)
 
         # reference frame
         for i in self.target_frames:
@@ -388,8 +415,22 @@ class SemanticKittiDatasetStage2(Dataset):
             # PIL to numpy
             img = np.array(img, dtype=np.float32, copy=False) / 255.0
             img = img[:self.img_H, :self.img_W, :]  # crop image
+            img = self.normalize_rgb(img)   # 通过rgb的均值方差归一化
 
-            image_list.append(self.normalize_rgb(img))
+            # Read Event Frame
+            if self.event_input is True:
+                event_frame_path = os.path.join(
+                    self.data_root, "dataset", "event_cnt_frames", sequence, "image_0", target_id + ".npy"
+                )   # 4 channel (pos_cnt, neg_cnt, pos_near, neg_near) H*W*4    3-sigma归一化到(0, 255)
+                event_frame = np.load(event_frame_path)
+                assert self.color_jitter is None   # Baseline没有增强，事件帧增强不等同图像增强
+                event_frame = cv2.resize(event_frame, (img_w, img_h))   # resize事件帧到一样大小
+                event_frame = np.array(event_frame, dtype=np.float32, copy=False) / 255.0   # 归一化
+                event_frame = event_frame[:self.img_H, :self.img_W, :]  # crop image
+                event_frame = self.to_tensor(event_frame)   # to tensor转换类型和维度
+                img = torch.cat((img, event_frame), dim=0)  # 堆叠rgb和事件 [3+4, H, W]
+
+            image_list.append(img)
 
         image_tensor = torch.stack(image_list, dim=0) #[N, 3, 370, 1220]
 
