@@ -5,7 +5,7 @@
 退出并杀死当前会话：ctrl+d
 
 # 远程连接tensorboard
-ssh -p 42169 -NL 8008:localhost:9009 root@ssh.atom.rk.supremind.info
+ssh -p 40612 -NL 8008:localhost:9009 root@ssh.atom.rk.supremind.info
 链接成功后会卡死，直接新开一个终端启动tb就好了
 
 # 打开tb
@@ -131,6 +131,9 @@ bash ./tools/dist_train.sh ./projects/configs/voxformer/voxformer-T_deform3D.py 
 # 复现VoxFormer-S-deform3D
 bash ./tools/dist_train.sh ./projects/configs/voxformer/voxformer-S_deform3D.py 8
 
-# VoxFormer-T-3D_rgb+event
-bash ./tools/dist_train.sh ./projects/configs/voxformer/voxformer-T_deform3D_event.py 2
+# VoxFormer-T-3D_rgb+event [SSC-DDP-01]
+bash ./tools/dist_train.sh ./projects/configs/voxformer/voxformer-T_deform3D_event.py 8
+
+# VoxFormer-T-3D_event [SSC-DDP-02]
+bash ./tools/dist_train.sh ./projects/configs/voxformer/voxformer-T_deform3D_event_only.py 8
 

@@ -26,6 +26,7 @@ class SemanticKittiDatasetStage2(Dataset):
     """
     Advised by Hao:
     --event_input (bool): if true, read event frames for the pipeline.
+    --skip_image_input (bool): if true, no rgb images input for the pipeline.
     """
     def __init__(
         self,
@@ -41,6 +42,7 @@ class SemanticKittiDatasetStage2(Dataset):
         query_tag = 'query_iou5203_pre7712_rec6153',
         color_jitter=None,
         event_input=False,
+        skip_image_input=False,
     ):
         super().__init__()
         
@@ -51,6 +53,7 @@ class SemanticKittiDatasetStage2(Dataset):
         if self.event_input is True:
             # 用于将事件转换为tensor
             self.to_tensor = transforms.ToTensor()
+        self.skip_image_input = skip_image_input
 
         self.nsweep=str(nsweep)
         self.depthmodel = depthmodel
@@ -380,6 +383,8 @@ class SemanticKittiDatasetStage2(Dataset):
         img_h, img_w, _ = img.shape     # 获取图像的size
         img = img[:self.img_H, :self.img_W, :]  # crop image
         img = self.normalize_rgb(img)  # 通过rgb的均值方差归一化
+        if self.skip_image_input:
+            img = None  # 如果跳过图片输入给img赋值为None 从前面可以得到size
 
         # Read Event Frame
         if self.event_input is True:
@@ -392,7 +397,10 @@ class SemanticKittiDatasetStage2(Dataset):
             event_frame = np.array(event_frame, dtype=np.float32, copy=False) / 255.0  # 归一化
             event_frame = event_frame[:self.img_H, :self.img_W, :]  # crop image
             event_frame = self.to_tensor(event_frame)   # to tensor转换类型和维度
-            img = torch.cat((img, event_frame), dim=0)  # 堆叠rgb和事件 [3+4, H, W]
+            if not self.skip_image_input:
+                img = torch.cat((img, event_frame), dim=0)  # 堆叠rgb和事件 [3+4, H, W]
+            else:
+                img = event_frame   # event frame only
 
         image_list.append(img)
 
@@ -416,6 +424,8 @@ class SemanticKittiDatasetStage2(Dataset):
             img = np.array(img, dtype=np.float32, copy=False) / 255.0
             img = img[:self.img_H, :self.img_W, :]  # crop image
             img = self.normalize_rgb(img)   # 通过rgb的均值方差归一化
+            if self.skip_image_input:
+                img = None  # 如果跳过图片输入给img赋值为None 从前面可以得到size
 
             # Read Event Frame
             if self.event_input is True:
@@ -428,7 +438,10 @@ class SemanticKittiDatasetStage2(Dataset):
                 event_frame = np.array(event_frame, dtype=np.float32, copy=False) / 255.0   # 归一化
                 event_frame = event_frame[:self.img_H, :self.img_W, :]  # crop image
                 event_frame = self.to_tensor(event_frame)   # to tensor转换类型和维度
-                img = torch.cat((img, event_frame), dim=0)  # 堆叠rgb和事件 [3+4, H, W]
+                if not self.skip_image_input:
+                    img = torch.cat((img, event_frame), dim=0)  # 堆叠rgb和事件 [3+4, H, W]
+                else:
+                    img = event_frame  # event frame only
 
             image_list.append(img)
 
