@@ -1,4 +1,4 @@
-work_dir = 'result/voxformer-T_3D_rgb+event'
+work_dir = 'result/voxformer_mm-T_3D_rgb+event'
 _base_ = [
     '../_base_/default_runtime.py'
 ]
@@ -27,19 +27,31 @@ _nsweep_ = 10
 _query_tag_ = 'query_iou5203_pre7712_rec6153'
 
 model = dict(
-   type='VoxFormer',
-   pretrained=dict(img='ckpts/resnet50-19c8e357.pth'),
-   img_backbone=dict(
+    type='VoxFormerMultiModal',
+    # pretrained=dict(img='ckpts/resnet50-19c8e357.pth'),
+    img_backbone=dict(
        type='ResNet',
        depth=50,
-       in_channels=7,
+       in_channels=3,
        num_stages=4,
        out_indices=(2,),
        frozen_stages=1,
        norm_cfg=dict(type='BN', requires_grad=False),
        norm_eval=True,
+       pretrained='ckpts/resnet50-19c8e357.pth',
        style='pytorch'),
-   img_neck=dict(
+    multimodal_backbone=dict(
+       type='ResNet',
+       depth=50,
+       in_channels=4,
+       num_stages=4,
+       out_indices=(2,),
+       frozen_stages=1,
+       norm_cfg=dict(type='BN', requires_grad=False),
+       norm_eval=True,
+       pretrained='ckpts/resnet50-19c8e357.pth',
+       style='pytorch'),
+    img_neck=dict(
        type='FPN',
        in_channels=[1024],
        out_channels=_dim_,
@@ -47,7 +59,8 @@ model = dict(
        add_extra_convs='on_output',
        num_outs=_num_levels_,
        relu_before_extra_convs=True),
-   pts_bbox_head=dict(
+    mm_in_channels=4,
+    pts_bbox_head=dict(
        type='VoxFormerHead',
        bev_h=128,
        bev_w=128,
@@ -132,11 +145,14 @@ model = dict(
            row_num_embed=512,
            col_num_embed=512,
            )),
-   train_cfg=dict(pts=dict(
-       grid_size=[512, 512, 1],
-       voxel_size=voxel_size,
-       point_cloud_range=point_cloud_range,
-       out_size_factor=4)))
+    train_cfg=dict(
+       pts=dict(
+           grid_size=[512, 512, 1],
+           voxel_size=voxel_size,
+           point_cloud_range=point_cloud_range,
+           out_size_factor=4),
+    )
+)
 
 
 dataset_type = 'SemanticKittiDatasetStage2'

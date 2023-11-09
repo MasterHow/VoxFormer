@@ -115,6 +115,9 @@ chmod 777 ./tools/dist_train.sh
 bash ./tools/dist_train.sh ./projects/configs/voxformer/voxformer-T-reproduce.py 8
 
 # 注意VoxFormer预处理了Calib.txt文件 增加了Tr
+
+# 调试不同步错误
+export CUDA_LAUNCH_BLOCKING=1
 #####################################################
 # 复现VoxFormer-T
 bash ./tools/dist_train.sh ./projects/configs/voxformer/voxformer-T-reproduce.py 8
@@ -131,9 +134,10 @@ bash ./tools/dist_train.sh ./projects/configs/voxformer/voxformer-T_deform3D.py 
 # 复现VoxFormer-S-deform3D
 bash ./tools/dist_train.sh ./projects/configs/voxformer/voxformer-S_deform3D.py 8
 
-# VoxFormer-T-3D_rgb+event [SSC-DDP-01]
+# VoxFormer-T-3D_rgb+event
 bash ./tools/dist_train.sh ./projects/configs/voxformer/voxformer-T_deform3D_event.py 8
 
 # VoxFormer-T-3D_event [SSC-DDP-02]
 bash ./tools/dist_train.sh ./projects/configs/voxformer/voxformer-T_deform3D_event_only.py 8
 
+# voxformer_mm-T_3D_rgb+event [SSC-DDP-01]
