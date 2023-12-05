@@ -13,6 +13,7 @@
 import time
 import copy
 import torch
+import torch.nn as nn
 import numpy as np
 import mmdet3d
 from tkinter.messagebox import NO
@@ -29,6 +30,10 @@ class VoxFormerMultiModal(MVXTwoStageDetector):
     New args:
     --multimodal_backbone: 额外模态输入的backbone
     --mm_in_channels: 多模态的输入通道数
+    --mm_fusion: 多模态的融合方式 选择为['add', 'cat', 'cat_1x1']
+        --add: 相加融合
+        --cat: 并联并扩大neck的input dimension融合
+        --cat_1x1: 并联并使用1x1卷积压缩通道融合
     """
     def __init__(self,
                  pts_voxel_layer=None,
@@ -38,6 +43,7 @@ class VoxFormerMultiModal(MVXTwoStageDetector):
                  img_backbone=None,
                  multimodal_backbone=None,
                  mm_in_channels=None,
+                 mm_fusion=None,
                  pts_backbone=None,
                  img_neck=None,
                  pts_neck=None,
@@ -60,6 +66,12 @@ class VoxFormerMultiModal(MVXTwoStageDetector):
         if multimodal_backbone is not None:
             assert mm_in_channels is not None
             self.mm_in_channels = int(mm_in_channels)
+            self.mm_fusion = mm_fusion
+            if mm_fusion is 'cat_1x1':
+                self.mm_fusion_layer = nn.Sequential(
+                    nn.Conv2d(1024 * 2, 1024, kernel_size=1, bias=False),
+                    nn.BatchNorm2d(1024),
+                )
             self.multimodal_backbone = builder.build_backbone(multimodal_backbone)
 
     def extract_img_feat(self, img, img_metas, len_queue=None):
@@ -78,8 +90,17 @@ class VoxFormerMultiModal(MVXTwoStageDetector):
                 img_mm = img[:, -self.mm_in_channels:, ...]
                 img_img_feats = self.img_backbone(img_img)
                 img_mm_feats = self.multimodal_backbone(img_mm)
-                # 计算两个张量的和 创建一个新的元组，包含这两个张量的和
-                img_feats = (img_img_feats[0] + img_mm_feats[0],)   # 相加融合
+                if self.mm_fusion is 'cat_1x1':
+                    # 1x1 cat 融合
+                    img_feats = (self.mm_fusion_layer(
+                        torch.cat((img_img_feats[0], img_mm_feats[0]), dim=1)
+                    ),)
+                elif self.mm_fusion is 'cat':
+                    # cat 融合
+                    img_feats = (torch.cat((img_img_feats[0], img_mm_feats[0]), dim=1),)
+                else:
+                    # 计算两个张量的和 创建一个新的元组，包含这两个张量的和
+                    img_feats = (img_img_feats[0] + img_mm_feats[0],)   # 相加融合
             else:
                 # 单图像输入
                 img_feats = self.img_backbone(img)

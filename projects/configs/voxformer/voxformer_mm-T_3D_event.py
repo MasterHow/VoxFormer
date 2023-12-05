@@ -1,4 +1,4 @@
-work_dir = 'result/voxformer-T_3D_event'
+work_dir = 'result/voxforme_mm-T_3D_rgb+event_cat1x1'
 _base_ = [
     '../_base_/default_runtime.py'
 ]
@@ -27,9 +27,20 @@ _nsweep_ = 10
 _query_tag_ = 'query_iou5203_pre7712_rec6153'
 
 model = dict(
-   type='VoxFormer',
-   pretrained=dict(img='ckpts/resnet50-19c8e357.pth'),
-   img_backbone=dict(
+    type='VoxFormerMultiModal',
+    # pretrained=dict(img='ckpts/resnet50-19c8e357.pth'),
+    img_backbone=dict(
+       type='ResNet',
+       depth=50,
+       in_channels=3,
+       num_stages=4,
+       out_indices=(2,),
+       frozen_stages=1,
+       norm_cfg=dict(type='BN', requires_grad=False),
+       norm_eval=True,
+       pretrained='ckpts/resnet50-19c8e357.pth',
+       style='pytorch'),
+    multimodal_backbone=dict(
        type='ResNet',
        depth=50,
        in_channels=4,
@@ -38,8 +49,9 @@ model = dict(
        frozen_stages=1,
        norm_cfg=dict(type='BN', requires_grad=False),
        norm_eval=True,
+       pretrained='ckpts/resnet50-19c8e357.pth',
        style='pytorch'),
-   img_neck=dict(
+    img_neck=dict(
        type='FPN',
        in_channels=[1024],
        out_channels=_dim_,
@@ -47,7 +59,9 @@ model = dict(
        add_extra_convs='on_output',
        num_outs=_num_levels_,
        relu_before_extra_convs=True),
-   pts_bbox_head=dict(
+    mm_in_channels=4,
+    mm_fusion='cat_1x1',
+    pts_bbox_head=dict(
        type='VoxFormerHead',
        bev_h=128,
        bev_w=128,
@@ -132,11 +146,14 @@ model = dict(
            row_num_embed=512,
            col_num_embed=512,
            )),
-   train_cfg=dict(pts=dict(
-       grid_size=[512, 512, 1],
-       voxel_size=voxel_size,
-       point_cloud_range=point_cloud_range,
-       out_size_factor=4)))
+    train_cfg=dict(
+       pts=dict(
+           grid_size=[512, 512, 1],
+           voxel_size=voxel_size,
+           point_cloud_range=point_cloud_range,
+           out_size_factor=4),
+    )
+)
 
 
 dataset_type = 'SemanticKittiDatasetStage2'
@@ -158,8 +175,7 @@ data = dict(
        temporal = _temporal_,
        labels_tag = _labels_tag_,
        query_tag = _query_tag_,
-       event_input=True,
-       skip_image_input=True,),
+       event_input=True,),
    val=dict(
        type=dataset_type,
        split = "val",
@@ -172,8 +188,7 @@ data = dict(
        temporal = _temporal_,
        labels_tag = _labels_tag_,
        query_tag = _query_tag_,
-       event_input=True,
-       skip_image_input=True,),
+       event_input=True,),
    test=dict(
        type=dataset_type,
        split = "val",
@@ -186,8 +201,7 @@ data = dict(
        temporal = _temporal_,
        labels_tag = _labels_tag_,
        query_tag = _query_tag_,
-       event_input=True,
-       skip_image_input=True,),
+       event_input=True,),
    shuffler_sampler=dict(type='DistributedGroupSampler'),
    nonshuffler_sampler=dict(type='DistributedSampler')
 )

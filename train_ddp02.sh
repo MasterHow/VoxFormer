@@ -30,4 +30,4 @@ pip install numpy==1.19.5
 pip install setuptools==59.5.0
 cd /workspace/mnt/storage/shihao/MyCode-02/VoxFormer
 chmod 777 ./tools/dist_train.sh
-bash ./tools/dist_train.sh ./projects/configs/voxformer/voxformer-T_deform3D_event_only.py 8
+bash ./tools/dist_train.sh ./projects/configs/voxformer/voxformer_mm-T_3D_event-02.py 8

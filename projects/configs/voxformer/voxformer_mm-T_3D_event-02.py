@@ -1,4 +1,4 @@
-work_dir = 'result/voxformer_mm-T_3D_rgb+event'
+work_dir = 'result/voxforme_mm-T_3D_rgb+event_cat'
 _base_ = [
     '../_base_/default_runtime.py'
 ]
@@ -53,13 +53,14 @@ model = dict(
        style='pytorch'),
     img_neck=dict(
        type='FPN',
-       in_channels=[1024],
+       in_channels=[2048],
        out_channels=_dim_,
        start_level=0,
        add_extra_convs='on_output',
        num_outs=_num_levels_,
        relu_before_extra_convs=True),
     mm_in_channels=4,
+    mm_fusion='cat',
     pts_bbox_head=dict(
        type='VoxFormerHead',
        bev_h=128,
